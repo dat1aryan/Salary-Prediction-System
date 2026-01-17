@@ -37,7 +37,7 @@ This project is an end-to-end machine learning application that predicts employe
 ---
 
 ## Live Streamlit App
-🔗 **[Streamlit App Link](https://your-streamlit-app-url-here)**
+🔗 **[Streamlit App Link](https://salary-prediction-system-v33tepzz6dyuvumcuwjegy.streamlit.app/)**
 
 ---
 
