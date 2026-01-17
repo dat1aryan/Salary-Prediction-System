@@ -19,10 +19,12 @@ def format_inr(amount):
         return s
     last3 = s[-3:]
     rest = s[:-3]
-    rest = ",".join([rest[max(i-2, 0):i] for i in range(len(rest), 0, -2)][::-1])
+    rest = ",".join(
+        [rest[max(i-2, 0):i] for i in range(len(rest), 0, -2)][::-1]
+    )
     return rest + "," + last3
 
-# ================= GLOBAL DARK + ANIMATED UI =================
+# ================= GLOBAL DARK UI =================
 st.markdown("""
 <style>
 .stApp {
@@ -44,15 +46,6 @@ section[data-testid="stSidebar"] {
     font-size: 3rem;
     font-weight: 800;
     animation: glow 3s infinite ease-in-out;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.fade-in {
-    animation: fadeIn 0.6s ease-out;
 }
 
 div[data-testid="metric-container"] {
@@ -80,7 +73,8 @@ def load_data():
 
 model = load_model()
 df = load_data()
-X = df.drop(columns=["Salary"])
+
+FEATURES = ["Age", "Bonus", "Months", "Education"]
 
 # ================= SESSION STATE =================
 if "prediction" not in st.session_state:
@@ -88,7 +82,7 @@ if "prediction" not in st.session_state:
 
 # ================= TITLE =================
 st.markdown(
-    "<div class='glow-title fade-in'>Salary Prediction System</div>",
+    "<div class='glow-title'>Salary Prediction System</div>",
     unsafe_allow_html=True
 )
 st.caption("Predict salary using demographic, financial, and business attributes")
@@ -97,31 +91,30 @@ st.caption("Predict salary using demographic, financial, and business attributes
 st.sidebar.markdown("## Navigation")
 page = st.sidebar.radio("", ["Overview", "Insights", "Salary Prediction"])
 
-# ================= OVERVIEW (RESTORED) =================
+# ================= OVERVIEW =================
 if page == "Overview":
     st.subheader("Overview")
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Records", df.shape[0])
-    c2.metric("Features", X.shape[1])
+    c2.metric("Features", len(FEATURES))
     c3.metric("Model", "Random Forest")
 
     st.markdown("""
     This system predicts employee salary using:
-    - Demographic data  
-    - Business dependencies  
-    - Financial behavior  
+    - Demographic attributes  
+    - Experience and incentives  
+    - Educational background  
 
-    Built for **consistency**, **accuracy**, and **deployment stability**.
+    Built for **stability**, **accuracy**, and **real-world deployment**.
     """)
 
-# ================= INSIGHTS (EDA — RESTORED) =================
+# ================= INSIGHTS =================
 elif page == "Insights":
     st.subheader("Insights")
 
     col1, col2 = st.columns(2)
 
-    # Salary Distribution
     with col1:
         fig, ax = plt.subplots()
         sns.histplot(df["Salary"], bins=30, kde=True, ax=ax, color="#6366f1")
@@ -131,49 +124,52 @@ elif page == "Insights":
         ax.tick_params(colors="white")
         st.pyplot(fig)
 
-    # Age vs Salary
     with col2:
         fig, ax = plt.subplots()
-        sns.scatterplot(x=df["Age"], y=df["Salary"], ax=ax, color="#22d3ee", s=40)
+        sns.scatterplot(
+            x=df["Age"],
+            y=df["Salary"],
+            ax=ax,
+            color="#22d3ee",
+            s=40
+        )
         ax.set_facecolor("#020617")
         fig.patch.set_facecolor("#020617")
         ax.set_title("Age vs Salary", color="white")
         ax.tick_params(colors="white")
         st.pyplot(fig)
 
-    # Correlation Matrix (RESTORED)
     st.markdown("### Feature Correlation")
     corr = df.select_dtypes(include=np.number).corr()
 
     fig, ax = plt.subplots(figsize=(10, 6))
-    sns.heatmap(
-        corr,
-        cmap="coolwarm",
-        ax=ax,
-        cbar_kws={"label": "Correlation"}
-    )
+    sns.heatmap(corr, cmap="coolwarm", ax=ax)
     ax.set_facecolor("#020617")
     fig.patch.set_facecolor("#020617")
     ax.tick_params(colors="white")
     ax.set_title("Correlation Matrix", color="white")
     st.pyplot(fig)
 
-# ================= SALARY PREDICTION (BUTTON FIXED) =================
+# ================= SALARY PREDICTION =================
 elif page == "Salary Prediction":
     st.subheader("Predict Salary")
 
     age = st.number_input("Age", min_value=18, max_value=65, value=30)
     bonus = st.number_input("Bonus", value=5000.0)
     months = st.number_input("Months of Experience", value=12)
-    education = st.selectbox("Education", df["Education"].unique())
+
+    # 🔒 DROP NaN VALUES FROM UI
+    education = st.selectbox(
+        "Education",
+        df["Education"].dropna().unique()
+    )
 
     if st.button("Predict Salary"):
-        input_df = pd.DataFrame([{
-            "Age": age,
-            "Bonus": bonus,
-            "Months": months,
-            "Education": education
-        }])
+        # 🔒 FORCE EXACT FEATURE ORDER
+        input_df = pd.DataFrame(
+            [[age, bonus, months, education]],
+            columns=FEATURES
+        )
 
         st.session_state.prediction = model.predict(input_df)[0]
 
@@ -187,7 +183,6 @@ elif page == "Salary Prediction":
                 font-weight:800;
                 color:#22d3ee;
                 text-shadow:0 0 20px #22d3ee;
-                animation: fadeIn 0.4s ease-out;
             ">
             ₹ {formatted_salary}
             </div>
